@@ -1,0 +1,10 @@
+Session: ModeloBase,,,,,,,,,,,
+Training Data: resumenpetroleo4rezagoslnydiff    Observations: 245,,,,,,,,,,,
+"Predictors: 29    Predictor Names: WTI, BRENT, DJI, XAU, OilC1, MM1R, WTI1R, BRENT1R, DJI1R, XAU1R, OilC11R, MM2R, WTI2R, BRENT2R, DJI2R, XAU2R, OilC12R, MM3R, WTI3R, BRENT3R, DJI3R, XAU3R, OilC13R, MM4R, WTI4R, BRENT4R, DJI4R, XAU4R, OilC14R",,,,,,,,,,,
+Response Name: MM,,,,,,,,,,,
+Validation: 5-fold cross-validation,,,,,,,,,,,
+Test Data: resumenpetroleo4rezagoslnydiff    Observations: 68,,,,,,,,,,,
+,,,,,,,,,,,
+,,,,,,,,,,,
+Favorite,Model Number,Model Type,Status,RMSE (Validation),MSE (Validation),RSquared (Validation),MAE (Validation),MAE (Test),MSE (Test),RMSE (Test),RSquared (Test)
+0,2,Linear Regression,Tested,0.0398419231067872,0.00158737883684714,0.928678034029727,0.0273304153572243,0.0307493935883156,0.00169042983569022,0.0411148371721234,0.881938717676664
