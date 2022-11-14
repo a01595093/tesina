@@ -1,0 +1,179 @@
+---
+title: "Anexos. Tesina"
+author: "Francisco Nagib Ruiz Reyes"
+date: '2022-06-13'
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Se establece la ruta de trabajo
+```{r}
+setwd("C:/Users/Scarl/Dropbox/Maestría ITESM/Tesina/Rstudio")
+```
+
+Leemos el archivo y se crea un Dataframe
+```{r}
+petroleo <- read.csv(file='Resumen_petroleo.csv')
+petroleo <- data.frame(petroleo, start = c(1996,1), frequency = 12)
+```
+
+Se cargan paquterías
+```{r, warning=FALSE, message=FALSE}
+library(tseries)
+library(forecast)
+library(vars)
+library(ggfortify)
+library(vars)
+library(ggfortify)
+library(fUnitRoots)
+library(lmtest)
+library(ARDL)
+```
+
+Se sacan el logaritmo a las variables
+```{r}
+MM_ln <- log(petroleo$MM)
+WTI_ln <- log(petroleo$WTI)
+BRENT_ln <- log(petroleo$BRENT)
+DJI_ln <- log(petroleo$DJI)
+XAU_ln <- log(petroleo$XAU)
+OILC1_ln <- log(petroleo$OILC1)
+```
+
+Se hace una diferenciación
+```{r}
+MM_ln_diff <- diff(MM_ln, lag = 1)
+WTI_ln_diff <- diff(WTI_ln, lag = 1)
+BRENT_ln_diff <- diff(BRENT_ln, lag = 1)
+DJI_ln_diff <- diff(DJI_ln, lag =  1)
+XAU_ln_diff <- diff(XAU_ln, lag = 1)
+OILC1_ln_diff <- diff(OILC1_ln, lag = 1)
+```
+
+Creamos un nuevo Dataframe
+```{r}
+petroleo_ln <- data.frame(MM_ln,WTI_ln,BRENT_ln, DJI_ln, XAU_ln, OILC1_ln)
+petroleo_diff<- data.frame(MM_ln_diff,WTI_ln_diff,BRENT_ln_diff, DJI_ln_diff, XAU_ln_diff, OILC1_ln_diff)
+```
+
+Los pasamos a Series de tiempo
+```{r}
+ln_ts <- ts(data = petroleo_ln, start = c(1996,1), frequency = 12)
+head(ln_ts)
+```
+
+Graficamos las series de tiempo
+```{r}
+autoplot(ln_ts, facets = TRUE)
+```
+```{r}
+autoplot(ln_ts, facets = FALSE)
+```
+
+
+Hacemos los modelos de regresión Multiple
+```{r}
+#Todas las Variables
+model_reg <- lm(formula =  MM_ln_diff ~  WTI_ln_diff + BRENT_ln_diff + DJI_ln_diff +XAU_ln_diff + OILC1_ln_diff -1, data=petroleo_diff)
+model_reg
+summary(model_reg)
+```
+
+
+```{r}
+#Probamos otra vez eliminando WTI
+model_reg_2 <- lm(formula =  MM_ln_diff ~  BRENT_ln_diff + DJI_ln_diff +XAU_ln_diff + OILC1_ln_diff-1, data=petroleo_diff)
+model_reg_2
+summary(model_reg_2)
+```
+
+
+```{r}
+#Probamos otra vez eliminando XAU
+model_reg_3 <- lm(formula =  MM_ln_diff ~  BRENT_ln_diff + DJI_ln_diff  + OILC1_ln_diff-1, data=petroleo_diff)
+model_reg_3
+summary(model_reg_3)
+```
+
+Dejando solo BRENT y OILC1, tenemos que, todas las variables son significativa.
+```{r}
+model_reg_4 <- lm(formula =  MM_ln_diff ~  BRENT_ln_diff  + OILC1_ln_diff-1, data=petroleo_diff)
+model_reg_4
+summary(model_reg_4)
+```
+
+Descomponemos la serie de tiempo
+```{r}
+ln_ts_MM <- ts(data = MM_ln, start = c(1996,1), frequency = 12)
+componentes = decompose(ln_ts_MM, type = c("multiplicative"))
+plot(componentes)
+```
+
+Diferenciamos
+```{r}
+tsstationary = diff(ln_ts_MM, differences=1)
+plot(tsstationary)
+adf.test(tsstationary, k =4)
+```
+
+Obtenemos autocorrelación y autocorrelación parcial
+```{r}
+urkpssTest(tsstationary, type = c("tau"), lags = c("short"),use.lag = NULL, doplot = TRUE) 
+
+```
+
+Primero vemos el modelo con un auto.arima 
+```{r}
+arima_automa <- auto.arima(petroleo_ln$MM_ln)
+summary(arima_automa)
+```
+
+Probamos ARIMA. con configuración de ARIMA (4,1,4) y estacional (3,0,3) 
+```{r}
+fitARIMA_4r <- arima(ln_ts_MM, order=c(4,1,4),seasonal = list(order = c(3,0,3), period = 12),method="ML")
+summary(fitARIMA_4r)
+coeftest(fitARIMA_4r)
+#Vemos significancia en niveles de 4 rezagos. 
+```
+
+Probamos ARIMA. con configuración de ARIMA (3,1,3) y estacional (2,0,2) 
+```{r}
+fitARIMA_3r <- arima(ln_ts_MM, order=c(3,1,3),seasonal = list(order = c(2,0,2), period = 12),method="ML")
+summary(fitARIMA_3r)
+coeftest(fitARIMA_3r)
+```
+
+
+Ahora tomamos el Modelo ARDL
+Dado que en la regresión anterior tenemos WTI y BRENT pero BRENT es significativo, eliminamos WTI.
+```{r}
+ardl_24000 <- ardl( MM_ln ~ BRENT_ln + DJI_ln +XAU_ln + OILC1_ln -1 , data = petroleo_ln, order = c(2,4,0,0,0))
+summary(ardl_24000)
+#Vemos significancia en el 4 rezago.
+```
+
+
+Dado que tenemos WTI y BRENT pero BRENT es significativo, eliminamos WTI. (Ya no se ve significancia en 5)
+```{r}
+ardl_25000 <- ardl( MM_ln ~ BRENT_ln + DJI_ln +XAU_ln + OILC1_ln-1, data = petroleo_ln, order = c(2,5,0,0,0))
+summary(ardl_25000)
+
+```
+
+Dado que tenemos WTI y BRENT pero BRENT es significativo, eliminamos WTI. (Ya no vemos significancia en XAU, XJI y OILC1 con rezagos mayores a 1)
+```{r}
+ardl_25111 <- ardl( MM_ln ~ BRENT_ln + DJI_ln +XAU_ln + OILC1_ln-1, data = petroleo_ln, order = c(2,4,2,2,2))
+summary(ardl_25111)
+```
+
+Dado que tenemos WTI y BRENT pero BRENT es significativo, eliminamos WTI. (Ya no vemos significancia en XAU, XJI y OILC1 con rezagos mayores a 1)
+```{r}
+ardl_240000 <- ardl( MM_ln ~  BRENT_ln + DJI_ln +XAU_ln + OILC1_ln + WTI_ln-1, data = petroleo_ln, order = c(2,4,0,0,0,0))
+summary(ardl_240000)
+```
+
+Resumen: Encontramos niveles significativos en el cuarto rezago.
